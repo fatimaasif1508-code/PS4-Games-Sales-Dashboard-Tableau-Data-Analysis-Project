@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PS4 Games Sales Dashboard Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Reset and base */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Noto Serif', Georgia, serif; 
+            font-size: 11pt; 
+            line-height: 1.6; 
+            color: #333;
+            text-align: justify;
+            text-align-last: left;
+        }
+
+        /* Page setup */
+        @page {
+            size: A4;
+            margin: 2.5cm 2cm;
+            @top-center { content: string(doctitle); font-size: 9pt; color: #666; }
+            @bottom-center { content: counter(page); font-size: 9pt; }
+        }
+        @page :first { margin: 0; @top-center { content: none; } @bottom-center { content: none; } }
+        @page cover { @top-center { content: none; } @bottom-center { content: none; } }
+        @page toc { @top-center { content: none; } @bottom-center { content: none; } }
+
+        body { string-set: doctitle ""; }
+        h1 { string-set: doctitle content(); }
+
+        /* Cover page - Swiss style */
+        .cover {
+            width: 210mm;
+            height: 297mm;
+            margin: 0;
+            position: relative;
+            overflow: hidden;
+            page: cover;
+            page-break-after: always;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        /* Swiss style geometric decorations */
+        .cover::before {
+            content: '';
+            position: absolute;
+            top: 30mm;
+            left: 20mm;
+            width: 60mm;
+            height: 4mm;
+            background: #e94560;
+        }
+        .cover::after {
+            content: '';
+            position: absolute;
+            bottom: 40mm;
+            right: 20mm;
+            width: 80mm;
+            height: 80mm;
+            border: 2px solid rgba(233, 69, 96, 0.3);
+        }
+
+        .cover-square {
+            position: absolute;
+            top: 50mm;
+            right: 30mm;
+            width: 40mm;
+            height: 40mm;
+            background: rgba(233, 69, 96, 0.2);
+        }
+
+        .cover-line-v {
+            position: absolute;
+            left: 30mm;
+            top: 100mm;
+            width: 2px;
+            height: 150mm;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .cover-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 80%;
+            z-index: 10;
+        }
+
+        .cover-title {
+            font-size: 32pt;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5cm;
+            letter-spacing: 2px;
+        }
+
+        .cover-subtitle {
+            font-size: 14pt;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 3cm;
+            font-weight: 400;
+        }
+
+        .cover-meta {
+            font-size: 11pt;
+            color: rgba(255,255,255,0.7);
+            line-height: 2;
+        }
+
+        /* TOC */
+        .toc-page {
+            page: toc;
+            page-break-after: always;
+        }
+
+        .toc-title {
+            font-size: 20pt;
+            font-weight: 700;
+            margin-bottom: 1cm;
+            color: #1a1a2e;
+            border-bottom: 3px solid #e94560;
+            padding-bottom: 0.3cm;
+        }
+
+        .toc {
+            list-style: none;
+        }
+
+        .toc li {
+            margin: 0.4cm 0;
+            font-size: 11pt;
+        }
+
+        .toc a {
+            color: #333;
+            text-decoration: none;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .toc a::after {
+            content: leader('.') target-counter(attr(href url), page);
+        }
+
+        /* Content styles */
+        h1 {
+            font-size: 20pt;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-top: 1cm;
+            margin-bottom: 0.5cm;
+            border-bottom: 2px solid #e94560;
+            padding-bottom: 0.2cm;
+            page-break-after: avoid;
+        }
+
+        h2 {
+            font-size: 14pt;
+            font-weight: 700;
+            color: #16213e;
+            margin-top: 0.8cm;
+            margin-bottom: 0.4cm;
+            page-break-after: avoid;
+        }
+
+        h3 {
+            font-size: 12pt;
+            font-weight: 700;
+            color: #333;
+            margin-top: 0.6cm;
+            margin-bottom: 0.3cm;
+            page-break-after: avoid;
+        }
+
+        p {
+            margin-bottom: 0.4cm;
+        }
+
+        /* Tables - three-line style */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.5cm 0;
+            font-size: 10pt;
+            max-width: 100%;
+            page-break-inside: avoid;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        thead tr {
+            border-top: 2px solid #333;
+            border-bottom: 1px solid #333;
+        }
+
+        th {
+            padding: 0.3cm 0.2cm;
+            text-align: left;
+            font-weight: 700;
+            background: #f8f8f8;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #ddd;
+        }
+
+        tbody tr:last-child {
+            border-bottom: 2px solid #333;
+        }
+
+        td {
+            padding: 0.25cm 0.2cm;
+        }
+
+        tr { page-break-inside: avoid; }
+
+        caption {
+            font-weight: 700;
+            margin-bottom: 0.3cm;
+            text-align: left;
+        }
+
+        caption::before {
+            content: attr(data-label) "  ";
+            font-weight: bold;
+        }
+
+        /* Figures */
+        figure {
+            margin: 0.8cm 0;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+
+        figure img {
+            max-width: 100%;
+            max-height: 40vh;
+            height: auto;
+        }
+
+        figcaption {
+            font-size: 10pt;
+            color: #666;
+            margin-top: 0.3cm;
+            font-style: italic;
+        }
+
+        figcaption::before {
+            content: attr(data-label) "  ";
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        /* Key metrics box */
+        .metrics-box {
+            background: #f8f8f8;
+            border-left: 4px solid #e94560;
+            padding: 0.5cm;
+            margin: 0.5cm 0;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.3cm;
+        }
+
+        .metric-item {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 18pt;
+            font-weight: 700;
+            color: #e94560;
+        }
+
+        .metric-label {
+            font-size: 9pt;
+            color: #666;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 0.4cm 0 0.4cm 1cm;
+        }
+
+        li {
+            margin: 0.2cm 0;
+        }
+
+        /* Prevent overflow */
+        pre, table, figure, img, svg, blockquote {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        a { word-break: break-all; color: #0f3460; }
+
+        /* Page breaks */
+        .page-break { page-break-after: always; }
+    </style>
+</head>
+<body>
+    <!-- Cover Page -->
+    <div class="cover">
+        <div class="cover-square"></div>
+        <div class="cover-line-v"></div>
+        <div class="cover-content">
+            <h1 class="cover-title">PS4 Games Sales<br>Dashboard Report</h1>
+            <p class="cover-subtitle">Comprehensive Analysis of PlayStation 4 Game Sales Data</p>
+            <div class="cover-meta">
+                <p>Data Analysis Report</p>
+                <p>Generated: February 2026</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table of Contents -->
+    <div class="toc-page">
+        <h2 class="toc-title">Table of Contents</h2>
+        <ul class="toc">
+            <li><a href="#sec1">1. Executive Summary</a></li>
+            <li><a href="#sec2">2. Dataset Overview</a></li>
+            <li><a href="#sec3">3. Dashboard Components</a></li>
+            <li><a href="#sec4">4. Key Findings and Insights</a></li>
+            <li><a href="#sec5">5. Regional Analysis</a></li>
+            <li><a href="#sec6">6. Publisher Performance</a></li>
+            <li><a href="#sec7">7. Conclusions and Recommendations</a></li>
+            <li><a href="#sec8">8. How to Use the Tableau Dashboard</a></li>
+        </ul>
+    </div>
+
+    <!-- Content -->
+    <h1 id="sec1">1. Executive Summary</h1>
+
+    <p>This report presents a comprehensive analysis of PlayStation 4 (PS4) game sales data, covering 825 games released between 2013 and 2020. The analysis reveals key trends in the gaming industry, identifies top-performing titles and publishers, and provides insights into regional sales distribution patterns.</p>
+
+    <div class="metrics-box">
+        <div class="metrics-grid">
+            <div class="metric-item">
+                <div class="metric-value">595.4M</div>
+                <div class="metric-label">Total Global Sales</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value">825</div>
+                <div class="metric-label">Games Analyzed</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value">17</div>
+                <div class="metric-label">Genres</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value">152</div>
+                <div class="metric-label">Publishers</div>
+            </div>
+        </div>
+    </div>
+
+    <p>The dashboard accompanying this report provides interactive visualizations that enable users to explore the data across multiple dimensions including time, genre, region, and publisher performance.</p>
+
+    <h1 id="sec2">2. Dataset Overview</h1>
+
+    <h2>2.1 Data Source and Structure</h2>
+
+    <p>The dataset contains sales information for PS4 games across five regions: North America, Europe, Japan, Rest of World, and Global totals. Each record represents a unique game title with the following attributes:</p>
+
+    <table>
+        <caption data-label="Table 1">Dataset Structure and Description</caption>
+        <thead>
+            <tr>
+                <th>Field</th>
+                <th>Type</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Game</td><td>String</td><td>Title of the game</td></tr>
+            <tr><td>Year</td><td>Integer</td><td>Release year (2013-2020)</td></tr>
+            <tr><td>Genre</td><td>String</td><td>Game category (Action, Sports, etc.)</td></tr>
+            <tr><td>Publisher</td><td>String</td><td>Game publisher company</td></tr>
+            <tr><td>North America</td><td>Float</td><td>Sales in North America (millions)</td></tr>
+            <tr><td>Europe</td><td>Float</td><td>Sales in Europe (millions)</td></tr>
+            <tr><td>Japan</td><td>Float</td><td>Sales in Japan (millions)</td></tr>
+            <tr><td>Rest of World</td><td>Float</td><td>Sales in other regions (millions)</td></tr>
+            <tr><td>Global</td><td>Float</td><td>Total worldwide sales (millions)</td></tr>
+        </tbody>
+    </table>
+
+    <h2>2.2 Data Quality</h2>
+
+    <p>The original dataset contained 1,034 records. After data cleaning to remove entries with missing Year and Publisher information, the final dataset comprises 825 high-quality records representing 1,031 unique game titles across 17 genres and 152 publishers.</p>
+
+    <h1 id="sec3">3. Dashboard Components</h1>
+
+    <p>The Tableau dashboard consists of five interconnected visualizations that provide different perspectives on the sales data:</p>
+
+    <h2>3.1 Top Games by Sales</h2>
+
+    <p>This horizontal bar chart displays the highest-selling PS4 games globally. The visualization uses color coding to distinguish between different titles and provides quick identification of market leaders.</p>
+
+    <figure id="fig-1">
+        <img src="chart_top_games.png" alt="Top 10 PS4 Games by Global Sales">
+        <figcaption data-label="Figure 1">Top 10 PS4 Games by Global Sales</figcaption>
+    </figure>
+
+    <h2>3.2 Sales by Genre</h2>
+
+    <p>The pie chart visualization shows the distribution of sales across different game genres, highlighting which categories dominate the PS4 market.</p>
+
+    <figure id="fig-2">
+        <img src="chart_genre_pie.png" alt="PS4 Game Sales Distribution by Genre">
+        <figcaption data-label="Figure 2">PS4 Game Sales Distribution by Genre</figcaption>
+    </figure>
+
+    <h2>3.3 Yearly Trend</h2>
+
+    <p>This line chart illustrates the temporal evolution of PS4 game sales, showing peak years and market trends over the console's lifecycle.</p>
+
+    <figure id="fig-3">
+        <img src="chart_yearly_trend.png" alt="PS4 Game Sales Trend by Year">
+        <figcaption data-label="Figure 3">PS4 Game Sales Trend by Year (2013-2018)</figcaption>
+    </figure>
+
+    <h2>3.4 Regional Sales</h2>
+
+    <p>The regional comparison chart breaks down sales across the four major geographic markets, revealing regional preferences and market sizes.</p>
+
+    <figure id="fig-4">
+        <img src="chart_regional.png" alt="PS4 Game Sales by Region">
+        <figcaption data-label="Figure 4">PS4 Game Sales Distribution Across Regions</figcaption>
+    </figure>
+
+    <h2>3.5 Top Publishers</h2>
+
+    <p>This visualization ranks publishers by their total PS4 game sales, identifying the most successful companies in the ecosystem.</p>
+
+    <figure id="fig-5">
+        <img src="chart_publishers.png" alt="Top 10 Publishers by PS4 Game Sales">
+        <figcaption data-label="Figure 5">Top 10 Publishers by PS4 Game Sales</figcaption>
+    </figure>
+
+    <h1 id="sec4">4. Key Findings and Insights</h1>
+
+    <h2>4.1 Top Performing Games</h2>
+
+    <p>The analysis reveals that Grand Theft Auto V leads the PS4 market with 19.39 million units sold globally. The top 10 games collectively account for a significant portion of total sales, demonstrating the hit-driven nature of the gaming industry.</p>
+
+    <table>
+        <caption data-label="Table 2">Top 10 PS4 Games by Global Sales</caption>
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Game Title</th>
+                <th>Global Sales (M)</th>
+                <th>Genre</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>1</td><td>Grand Theft Auto V</td><td>19.39</td><td>Action</td></tr>
+            <tr><td>2</td><td>Call of Duty: Black Ops 3</td><td>15.09</td><td>Shooter</td></tr>
+            <tr><td>3</td><td>Red Dead Redemption 2</td><td>13.94</td><td>Action-Adventure</td></tr>
+            <tr><td>4</td><td>Call of Duty: WWII</td><td>13.40</td><td>Shooter</td></tr>
+            <tr><td>5</td><td>FIFA 18</td><td>11.80</td><td>Sports</td></tr>
+            <tr><td>6</td><td>FIFA 17</td><td>10.94</td><td>Sports</td></tr>
+            <tr><td>7</td><td>Uncharted (PS4)</td><td>10.33</td><td>Action</td></tr>
+            <tr><td>8</td><td>Spider-Man (PS4)</td><td>8.76</td><td>Action-Adventure</td></tr>
+            <tr><td>9</td><td>Fallout 4</td><td>8.48</td><td>Role-Playing</td></tr>
+            <tr><td>10</td><td>Call of Duty: Infinite Warfare</td><td>8.48</td><td>Shooter</td></tr>
+        </tbody>
+    </table>
+
+    <h2>4.2 Genre Analysis</h2>
+
+    <p>Action games represent the largest category with 258 titles, followed by Role-Playing (123 titles) and Miscellaneous games (123 titles). However, when examining sales volume, Shooter and Sports genres demonstrate strong commercial performance despite having fewer titles.</p>
+
+    <h2>4.3 Temporal Trends</h2>
+
+    <p>The yearly sales analysis shows that 2016 was the peak year for PS4 game sales with 135.72 million units sold. Sales remained strong from 2014 to 2017, representing the console's mature market phase. The decline after 2017 reflects the natural lifecycle of the console generation as attention shifted toward the next generation.</p>
+
+    <h1 id="sec5">5. Regional Analysis</h1>
+
+    <p>The regional sales breakdown reveals significant market differences:</p>
+
+    <table>
+        <caption data-label="Table 3">Regional Sales Summary</caption>
+        <thead>
+            <tr>
+                <th>Region</th>
+                <th>Total Sales (M)</th>
+                <th>Market Share</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Europe</td><td>257.07</td><td>43.2%</td></tr>
+            <tr><td>North America</td><td>211.57</td><td>35.5%</td></tr>
+            <tr><td>Rest of World</td><td>92.03</td><td>15.5%</td></tr>
+            <tr><td>Japan</td><td>34.69</td><td>5.8%</td></tr>
+        </tbody>
+    </table>
+
+    <p>Europe emerges as the largest market for PS4 games, accounting for 43.2% of global sales. This is followed by North America at 35.5%. Japan, despite being Sony's home market, represents only 5.8% of sales, reflecting the strong competition from Nintendo in the Japanese market.</p>
+
+    <h1 id="sec6">6. Publisher Performance</h1>
+
+    <p>The publisher analysis identifies the key players in the PS4 ecosystem. While Namco Bandai Games has the highest number of titles (56), publishers like Rockstar Games and Activision dominate in terms of sales volume through their blockbuster franchises.</p>
+
+    <p>Top publishers by title count include:</p>
+    <ul>
+        <li>Namco Bandai Games: 56 titles</li>
+        <li>Sony Interactive Entertainment: 47 titles</li>
+        <li>Ubisoft: 45 titles</li>
+        <li>Square Enix: 40 titles</li>
+        <li>Tecmo Koei: 37 titles</li>
+    </ul>
+
+    <h1 id="sec7">7. Conclusions and Recommendations</h1>
+
+    <h2>7.1 Key Conclusions</h2>
+
+    <ol>
+        <li><strong>Hit-Driven Market:</strong> The PS4 market is dominated by a small number of blockbuster titles, with the top 10 games accounting for a disproportionate share of total sales.</li>
+        <li><strong>Genre Diversity:</strong> While Action games are most numerous, Shooter and Sports genres show strong commercial performance per title.</li>
+        <li><strong>Regional Variations:</strong> Europe and North America represent the primary markets, while Japan shows relatively lower PS4 adoption.</li>
+        <li><strong>Peak Performance:</strong> The 2014-2017 period represents the golden age of PS4 software sales.</li>
+    </ol>
+
+    <h2>7.2 Strategic Recommendations</h2>
+
+    <ul>
+        <li><strong>For Publishers:</strong> Focus on high-quality franchise titles in Shooter and Sports genres for maximum commercial impact.</li>
+        <li><strong>For Developers:</strong> Consider regional preferences when localizing games, with particular attention to European and North American markets.</li>
+        <li><strong>For Analysts:</strong> Monitor emerging genres and indie titles that may disrupt the established market patterns.</li>
+    </ul>
+
+    <h1 id="sec8">8. How to Use the Tableau Dashboard</h1>
+
+    <h2>8.1 File Contents</h2>
+
+    <p>The dashboard package includes the following files:</p>
+
+    <table>
+        <caption data-label="Table 4">Dashboard Files Description</caption>
+        <thead>
+            <tr>
+                <th>File</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>PS4_GamesSales_Dashboard.twbx</td><td>Tableau Packaged Workbook (contains dashboard + data)</td></tr>
+            <tr><td>PS4_GamesSales_Cleaned.csv</td><td>Cleaned dataset for external analysis</td></tr>
+            <tr><td>PS4_GamesSales_Dashboard_Report.pdf</td><td>This comprehensive analysis report</td></tr>
+        </tbody>
+    </table>
+
+    <h2>8.2 Opening the Dashboard</h2>
+
+    <ol>
+        <li>Install Tableau Desktop or Tableau Public (free version available)</li>
+        <li>Double-click the PS4_GamesSales_Dashboard.twbx file</li>
+        <li>The dashboard will open with all visualizations ready for interaction</li>
+    </ol>
+
+    <h2>8.3 Interactive Features</h2>
+
+    <ul>
+        <li><strong>Filtering:</strong> Click on any chart element to filter the entire dashboard</li>
+        <li><strong>Tooltips:</strong> Hover over data points for detailed information</li>
+        <li><strong>Drill-down:</strong> Use the hierarchy features to explore data at different levels</li>
+        <li><strong>Export:</strong> Right-click on any visualization to export as image or data</li>
+    </ul>
+
+    <p style="margin-top: 1cm; padding-top: 0.5cm; border-top: 1px solid #ccc; font-size: 9pt; color: #666;">
+        Report generated on February 20, 2026. Data analysis based on PS4 Games Sales dataset.<br>
+        For questions or additional analysis requests, please refer to the Tableau dashboard documentation.
+    </p>
+</body>
+</html>
